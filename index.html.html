@@ -1,0 +1,1362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Siemens Trainguard MT - Consola de Campo</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; -webkit-tap-highlight-color: transparent; }
+    body { background-color: #0b1120; color: #f8fafc; min-height: 100vh; display: flex; flex-direction: column; font-size: 13px; }
+    
+    header { background: #1e293b; border-bottom: 2px solid #00646e; padding: 10px 12px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 50; }
+    .brand-box { display: flex; align-items: center; gap: 12px; }
+    .siemens-logo { width: 105px; height: 16px; fill: #00646e; }
+    .title-box h1 { font-size: 14px; color: #38bdf8; font-weight: 800; line-height: 1.1; }
+    .title-box span { font-size: 10px; color: #94a3b8; }
+    .net-box { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; }
+    .net-tag { font-size: 9px; font-family: monospace; background: #0f172a; padding: 2px 5px; border-radius: 3px; border: 1px solid #334155; color: #38bdf8; }
+    .auth-tag { font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; cursor: pointer; }
+    .auth-guest { background: #334155; color: #94a3b8; }
+    .auth-admin { background: #065f46; color: #a7f3d0; border: 1px solid #059669; }
+
+    nav { background: #0f172a; display: flex; border-bottom: 1px solid #334155; overflow-x: auto; scrollbar-width: none; }
+    nav::-webkit-scrollbar { display: none; }
+    .nav-btn { flex: 0 0 auto; min-width: 80px; background: none; border: none; padding: 10px 6px; font-size: 11px; font-weight: 700; color: #64748b; cursor: pointer; text-align: center; border-bottom: 2px solid transparent; }
+    .nav-btn.active { color: #38bdf8; border-bottom-color: #00646e; background: rgba(0, 100, 110, 0.15); }
+
+    main { padding: 10px; flex: 1; max-width: 650px; width: 100%; margin: 0 auto; }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    .panel { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+    input, select { width: 100%; background: #0f172a; border: 1px solid #475569; color: #f8fafc; padding: 8px; border-radius: 6px; font-size: 13px; margin-top: 4px; margin-bottom: 6px; outline: none; }
+    input:focus, select:focus { border-color: #38bdf8; }
+
+    .btn-action { background: #0284c7; color: #fff; border: none; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .btn-action:active { background: #0369a1; }
+    .btn-save { background: #10b981; color: #022c22; font-weight: 800; padding: 10px 12px; width: 100%; margin-top: 6px; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .btn-save:active { background: #059669; }
+    .btn-save-radar { background: #38bdf8; color: #082f49; font-weight: 800; padding: 9px 12px; width: 100%; margin-top: 6px; border: none; border-radius: 6px; font-size: 12px; cursor: pointer; }
+    .btn-save-radar:active { background: #0284c7; color: #fff; }
+
+    /* Modal de Login Admin */
+    .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(11, 17, 32, 0.85); z-index: 100; justify-content: center; align-items: center; padding: 15px; }
+    .modal-box { background: #1e293b; border: 1px solid #0284c7; border-radius: 10px; padding: 16px; width: 100%; max-width: 320px; box-shadow: 0 10px 25px rgba(0,0,0,0.5); }
+    .modal-title { font-size: 13px; font-weight: 800; color: #38bdf8; margin-bottom: 4px; text-transform: uppercase; }
+    .modal-desc { font-size: 11px; color: #94a3b8; margin-bottom: 12px; }
+
+    /* Tarjetas de Rueda */
+    .wheel-card { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #64748b; }
+    .wheel-card.card-green { border-left-color: #10b981; }
+    .wheel-card.card-yellow { border-left-color: #eab308; }
+    .wheel-card.card-orange { border-left-color: #f97316; }
+    .wheel-card.card-red { border-left-color: #ef4444; }
+
+    .wheel-info h3 { font-size: 14px; font-weight: 800; color: #f8fafc; margin-bottom: 2px; }
+    .wheel-meta { font-size: 10px; color: #94a3b8; font-family: monospace; }
+    .wheel-val-box { text-align: right; }
+    .wheel-badge { font-size: 15px; font-weight: 800; font-family: monospace; padding: 2px 8px; border-radius: 5px; display: inline-block; }
+    .badge-green { background: #064e3b; color: #6ee7b7; border: 1px solid #059669; }
+    .badge-yellow { background: #713f12; color: #fde047; border: 1px solid #eab308; }
+    .badge-orange { background: #7c2d12; color: #fdba74; border: 1px solid #f97316; }
+    .badge-red { background: #7f1d1d; color: #fca5a5; border: 1px solid #ef4444; }
+    .fdi-tag { font-size: 10px; color: #38bdf8; font-family: monospace; margin-top: 3px; }
+
+    .filter-btn-group { display: flex; gap: 4px; overflow-x: auto; margin-top: 6px; padding-bottom: 4px; scrollbar-width: none; }
+    .filter-btn-group::-webkit-scrollbar { display: none; }
+    .btn-filter { background: #0f172a; border: 1px solid #475569; color: #cbd5e1; padding: 5px 9px; border-radius: 4px; font-size: 10px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+    .btn-filter.active { background: #0284c7; color: #fff; border-color: #38bdf8; }
+
+    .key-card { background: #0f172a; border: 1px solid #334155; border-left: 4px solid #38bdf8; padding: 10px; border-radius: 6px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center; }
+    .key-title { font-size: 11px; color: #94a3b8; font-weight: bold; }
+    .key-val { font-size: 16px; font-family: monospace; font-weight: 800; color: #38bdf8; }
+    .calc-screen { background: #032b43; border: 1px solid #0284c7; border-radius: 6px; padding: 8px 10px; margin-top: 6px; display: flex; justify-content: space-between; align-items: center; }
+    .calc-val { font-size: 20px; font-weight: bold; font-family: monospace; color: #38bdf8; }
+
+    .f-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 10px; }
+    .f-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .f-code { font-size: 10px; font-family: monospace; font-weight: bold; color: #38bdf8; background: #0c4a6e; padding: 2px 6px; border-radius: 4px; }
+    .f-badge { font-size: 9px; font-weight: 700; padding: 2px 5px; border-radius: 4px; text-transform: uppercase; }
+    .badge-eb { background: #881337; color: #fecdd3; border: 1px solid #be123c; }
+    .badge-balise { background: #14532d; color: #bbf7d0; border: 1px solid #15803d; }
+    .badge-hw { background: #78350f; color: #fef3c7; border: 1px solid #b45309; }
+    .badge-hmi { background: #312e81; color: #c7d2fe; border: 1px solid #4338ca; }
+    .badge-comm { background: #431407; color: #fdba74; border: 1px solid #c2410c; }
+    .badge-ato { background: #1e3a8a; color: #bfdbfe; border: 1px solid #2563eb; }
+    .badge-wire { background: #064e3b; color: #a7f3d0; border: 1px solid #059669; }
+
+    .f-title { font-size: 13px; font-weight: 700; color: #f1f5f9; margin-bottom: 6px; }
+    .f-sec { font-size: 11px; font-weight: 700; margin-top: 6px; text-transform: uppercase; }
+    .sec-cause { color: #f87171; }
+    .sec-act { color: #4ade80; }
+    .sec-info { color: #38bdf8; }
+    ul, ol { padding-left: 16px; font-size: 12px; color: #cbd5e1; line-height: 1.35; margin-top: 2px; }
+
+    .m-card { background: #1e293b; border: 1px solid #334155; border-radius: 8px; padding: 12px; margin-bottom: 10px; border-left: 4px solid #38bdf8; }
+    .m-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .m-code { font-size: 11px; font-family: monospace; font-weight: bold; color: #38bdf8; background: #0c4a6e; padding: 2px 6px; border-radius: 4px; }
+    .m-badge { font-size: 9px; font-weight: 800; padding: 2px 5px; border-radius: 4px; text-transform: uppercase; }
+    .badge-volt { background: #065f46; color: #a7f3d0; border: 1px solid #059669; }
+    .badge-cont { background: #854d0e; color: #fef08a; border: 1px solid #ca8a04; }
+    .badge-ohm { background: #4c1d95; color: #e9d5ff; border: 1px solid #7c3aed; }
+    .m-title { font-size: 13px; font-weight: 700; color: #f1f5f9; margin-bottom: 4px; }
+    .test-box { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px 10px; margin-top: 4px; font-size: 11px; }
+    .test-row { display: flex; justify-content: space-between; margin-bottom: 3px; }
+    .test-label { color: #94a3b8; }
+    .test-val { font-family: monospace; font-weight: bold; color: #e2e8f0; }
+
+    .route-box { background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 8px 10px; margin-top: 4px; margin-bottom: 4px; }
+    .route-node { display: flex; align-items: center; justify-content: space-between; font-size: 11px; }
+    .route-tag { font-family: monospace; font-weight: bold; color: #38bdf8; background: #082f49; padding: 2px 6px; border-radius: 4px; border: 1px solid #0284c7; }
+    .route-arrow { color: #f59e0b; font-weight: bold; font-size: 13px; margin: 0 4px; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 11px; margin-top: 6px; }
+    th, td { padding: 7px 6px; text-align: left; border-bottom: 1px solid #334155; }
+    th { background: #0f172a; color: #38bdf8; font-weight: 700; text-transform: uppercase; font-size: 10px; }
+
+    .led-pill { display: inline-block; padding: 2px 6px; border-radius: 4px; font-weight: bold; font-size: 10px; font-family: monospace; }
+    .led-green { background: #064e3b; color: #6ee7b7; border: 1px solid #059669; }
+    .led-red { background: #7f1d1d; color: #fca5a5; border: 1px solid #dc2626; }
+    .led-yellow { background: #78350f; color: #fde68a; border: 1px solid #d97706; }
+    .led-off { background: #1e293b; color: #94a3b8; border: 1px solid #475569; }
+
+    .fuse-badge { font-family: monospace; font-size: 11px; font-weight: 800; padding: 2px 6px; border-radius: 4px; background: #0c4a6e; color: #38bdf8; border: 1px solid #0284c7; }
+    .volt-badge { font-size: 10px; color: #cbd5e1; background: #334155; padding: 2px 4px; border-radius: 3px; margin-left: 4px; }
+  </style>
+</head>
+<body>
+
+  <!-- MODAL DE AUTORIZACIÓN ADMIN -->
+  <div id="auth-modal" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-title">Autorización Requerida</div>
+      <div class="modal-desc">Solo el usuario administrador puede modificar parámetros y actualizar registros.</div>
+      
+      <label style="font-size:10px; color:#94a3b8;">Usuario:</label>
+      <input type="text" id="auth-user" placeholder="admin" autocomplete="off" autocapitalize="none">
+      
+      <label style="font-size:10px; color:#94a3b8;">Contraseña:</label>
+      <input type="password" id="auth-pass" placeholder="••••••••">
+      
+      <div style="display:flex; gap:8px; margin-top:8px;">
+        <button class="btn-action" style="flex:1; background:#475569;" onclick="closeAuthModal()">Cancelar</button>
+        <button class="btn-action" style="flex:1; background:#10b981;" onclick="submitAuth()">Ingresar</button>
+      </div>
+      <div id="auth-error" style="color:#f87171; font-size:10px; text-align:center; margin-top:8px; display:none;">Credenciales incorrectas</div>
+    </div>
+  </div>
+
+  <header>
+    <div class="brand-box">
+      <svg class="siemens-logo" viewBox="0 0 1100 160" xmlns="http://www.w3.org/2000/svg">
+        <path d="M120 35 C110 12 85 0 54 0 C22 0 0 16 0 45 C0 78 50 74 50 98 C50 110 38 116 25 116 C12 116 2 108 0 94 L0 132 C12 144 32 150 56 150 C92 150 116 132 116 102 C116 68 62 72 62 48 C62 38 72 32 86 32 C98 32 110 38 120 48 Z"/>
+        <path d="M175 4 H225 V146 H175 Z"/>
+        <path d="M275 4 H385 V38 H325 V60 H375 V92 H325 V112 H385 V146 H275 Z"/>
+        <path d="M430 4 H475 L510 82 L545 4 H590 V146 H545 V58 L510 134 H508 L475 58 V146 H430 Z"/>
+        <path d="M635 4 H745 V38 H685 V60 H735 V92 H685 V112 H745 V146 H635 Z"/>
+        <path d="M790 4 H835 L885 88 V4 H935 V146 H892 L840 60 V146 H790 Z"/>
+        <path d="M1100 35 C1090 12 1065 0 1034 0 C1002 0 980 16 980 45 C980 78 1030 74 1030 98 C1030 110 1018 116 1005 116 C992 116 982 108 980 94 L980 132 C992 144 1012 150 1036 150 C1072 150 1096 132 1096 102 C1096 68 1042 72 1042 48 C1042 38 1052 32 1066 32 C1078 32 1090 38 1100 48 Z"/>
+      </svg>
+      <div class="title-box">
+        <h1>Trainguard MT</h1>
+        <span>Línea H &bull; Manual de Servicio TGMT</span>
+      </div>
+    </div>
+    <div class="net-box">
+      <div style="display:flex; gap:4px; align-items:center;">
+        <span id="auth-status-tag" class="auth-tag auth-guest" onclick="toggleAuthStatus()">Lectura</span>
+        <span class="net-tag">ITF: 192.168.1.32</span>
+      </div>
+      <span class="net-tag">PC: 192.168.1.50</span>
+    </div>
+  </header>
+
+  <nav>
+    <button class="nav-btn active" onclick="showTab('pass', this)">Claves FDI</button>
+    <button class="nav-btn" onclick="showTab('fdi', this)">Rueda / FDI</button>
+    <button class="nav-btn" onclick="showTab('ruedas-view', this)">Control Ruedas</button>
+    <button class="nav-btn" onclick="showTab('balise-calc', this)">ID Baliza</button>
+    <button class="nav-btn" onclick="showTab('diag', this)">Diagnóstico</button>
+    <button class="nav-btn" onclick="showTab('medir', this)">Medición & Cables</button>
+    <button class="nav-btn" onclick="showTab('cables', this)">Cableado Ext.</button>
+    <button class="nav-btn" onclick="showTab('modulos', this)">Módulos & Fallas</button>
+    <button class="nav-btn" onclick="showTab('leds', this)">Estados LEDs</button>
+    <button class="nav-btn" onclick="showTab('fusibles', this)">Fusibles DIS</button>
+  </nav>
+
+  <main>
+
+    <!-- 1. SOLAPA: CLAVES FDI -->
+    <section id="tab-pass" class="tab-content active">
+      <div class="panel">
+        <div style="font-weight: bold; color: #38bdf8; margin-bottom: 2px;">Palabras Clave Vitales (Procedimiento FDI)</div>
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 10px;">Códigos de validación e intercambio vital según Manual Cap. 5.3</div>
+
+        <div class="key-card">
+          <div>
+            <div class="key-title">PASO 2: RECIBIDO DEL VITAL (CW #1)</div>
+            <div class="key-val">1728977322</div>
+          </div>
+          <button class="btn-action" onclick="copyTxt('1728977322')">Copiar</button>
+        </div>
+
+        <div class="key-card" style="border-left-color: #34d399;">
+          <div>
+            <div class="key-title">PASO 2: INGRESAR NO-VITAL (CW #2)</div>
+            <div class="key-val" style="color: #34d399;">206041995</div>
+          </div>
+          <button class="btn-action" onclick="copyTxt('206041995')">Copiar</button>
+        </div>
+
+        <div class="key-card" style="border-left-color: #f59e0b;">
+          <div>
+            <div class="key-title">PASO 6: CONFIRMAR MODIFICACIÓN (CW)</div>
+            <div class="key-val" style="color: #f59e0b;">328102004</div>
+          </div>
+          <button class="btn-action" onclick="copyTxt('328102004')">Copiar</button>
+        </div>
+
+        <div style="margin-top: 10px; padding: 8px; background: #0f172a; border-radius: 6px; font-size: 11px; color: #94a3b8;">
+          <b style="color:#cbd5e1;">Regla Paso 6:</b> Ingresar el código <code>328102004</code> y aumentar el número de secuencia recibido en <b>+1</b> antes de enviar ("Send").
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. SOLAPA: RUEDA / FDI & CALIBRACIÓN RADAR -->
+    <section id="tab-fdi" class="tab-content">
+      <div class="panel">
+        <div style="font-weight: bold; color: #38bdf8; margin-bottom: 2px;">Cálculo y Actualización de Diámetro de Rueda</div>
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Offset 1.000 &bull; <code>Valor Ingresado = 1000 - Diámetro Real</code></div>
+
+        <label style="font-size: 11px; color: #cbd5e1;">Seleccionar Formación / Coche:</label>
+        <select id="wheel-car-select" onchange="onSelectCarChange()"></select>
+
+        <label style="font-size: 11px; color: #cbd5e1;">Diámetro Real Medido (mm):</label>
+        <input type="number" id="fdi-wheel-in" value="823" oninput="calcWheelFDI()">
+
+        <div class="calc-screen">
+          <div>
+            <div style="font-size: 9px; color: #94a3b8; font-weight: bold;">VALOR A INGRESAR EN FDI:</div>
+            <div class="calc-val" id="fdi-wheel-out">177</div>
+          </div>
+          <button class="btn-action" onclick="copyTxt(document.getElementById('fdi-wheel-out').innerText)">Copiar</button>
+        </div>
+
+        <button class="btn-save" onclick="triggerProtectedAction(updateCarMeasurement)">Actualizar Rueda y Guardar Fecha</button>
+        <div id="save-feedback" style="font-size: 11px; color: #34d399; text-align: center; margin-top: 6px; display: none;"></div>
+      </div>
+
+      <div class="panel">
+        <div style="font-weight: bold; color: #38bdf8; margin-bottom: 2px;">Calibración de Radar Doppler (CALIBR)</div>
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Offset 1.000 &bull; <code>Valor Ingresado = 1000 - Valor Real</code></div>
+
+        <label style="font-size: 11px; color: #cbd5e1;">Valor Real Medido de Radar (ej: 996, 1004):</label>
+        <input type="number" id="fdi-radar-in" value="996" oninput="calcRadarFDI()">
+
+        <div class="calc-screen">
+          <div>
+            <div style="font-size: 9px; color: #94a3b8; font-weight: bold;">VALOR FDI A INGRESAR:</div>
+            <div class="calc-val" id="fdi-radar-out">4</div>
+          </div>
+          <button class="btn-action" onclick="copyTxt(document.getElementById('fdi-radar-out').innerText)">Copiar</button>
+        </div>
+
+        <button class="btn-save-radar" onclick="triggerProtectedAction(updateRadarMeasurement)">Actualizar Radar y Guardar Fecha</button>
+        <div id="save-radar-feedback" style="font-size: 11px; color: #38bdf8; text-align: center; margin-top: 6px; display: none;"></div>
+      </div>
+
+      <div class="panel">
+        <div style="font-weight: bold; color: #38bdf8; font-size: 12px; margin-bottom: 6px;">Parámetros Guardados del Tren:</div>
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px; font-size:11px;">
+          <div style="background:#0f172a; padding:6px; border-radius:4px; border:1px solid #334155;">
+            <span style="color:#94a3b8;">CALIBRACIÓN RADAR:</span><br>
+            <b id="disp-calibr" style="color:#38bdf8; font-family:monospace; font-size:14px;">994</b>
+          </div>
+          <div style="background:#0f172a; padding:6px; border-radius:4px; border:1px solid #334155;">
+            <span style="color:#94a3b8;">OBCU NR:</span><br>
+            <b id="disp-obcu" style="color:#38bdf8; font-family:monospace; font-size:14px;">1200</b>
+          </div>
+        </div>
+        <div style="background:#0f172a; padding:6px; border-radius:4px; border:1px solid #334155; margin-top:6px; font-size:11px;">
+          <span style="color:#94a3b8;">ANTENA BALIZA (BANT 1):</span><br>
+          <b id="disp-bant" style="color:#f59e0b; font-family:monospace; font-size:12px;">61 0081 1106-060</b>
+        </div>
+      </div>
+    </section>
+
+    <!-- 3. SOLAPA: CONTROL RÁPIDO DE RUEDAS -->
+    <section id="tab-ruedas-view" class="tab-content">
+      <div class="panel">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div>
+            <div style="font-weight: bold; color: #38bdf8; font-size: 13px;">Panel Rápido de Diámetros & Fechas</div>
+            <div style="font-size: 10px; color: #94a3b8;">Nuevo: ~860 mm &bull; Condena: ~790 mm</div>
+          </div>
+          <button class="btn-action" style="font-size:10px; padding:4px 8px;" onclick="syncAndRefresh()">Sincronizar</button>
+        </div>
+
+        <input type="text" id="wheel-quick-search" oninput="renderWheelCards()" placeholder="Buscar tren (ej: 302, 308) o fecha..." style="margin-top:8px;">
+
+        <div class="filter-btn-group">
+          <button class="btn-filter active" id="wf-all" onclick="setWheelViewFilter('ALL', this)">Todos (<span id="cnt-all">0</span>)</button>
+          <button class="btn-filter" id="wf-green" onclick="setWheelViewFilter('GREEN', this)">Excelente &ge;850 (<span id="cnt-green">0</span>)</button>
+          <button class="btn-filter" id="wf-yellow" onclick="setWheelViewFilter('YELLOW', this)">Normal 820-849 (<span id="cnt-yellow">0</span>)</button>
+          <button class="btn-filter" id="wf-orange" onclick="setWheelViewFilter('ORANGE', this)">Atención 790-819 (<span id="cnt-orange">0</span>)</button>
+          <button class="btn-filter" id="wf-red" onclick="setWheelViewFilter('RED', this)">Condena &lt;790 (<span id="cnt-red">0</span>)</button>
+        </div>
+      </div>
+
+      <div id="wheel-cards-container"></div>
+    </section>
+
+    <!-- 4. SOLAPA: CÁLCULO Y ACTUALIZACIÓN DE ID DE BALIZA -->
+    <section id="tab-balise-calc" class="tab-content">
+      <div class="panel">
+        <div style="font-weight: bold; color: #38bdf8; margin-bottom: 2px;">Cálculo y Actualización de Antena Baliza (BANT 1)</div>
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Desglose en 4 Bloques &bull; Ejemplo: <code>61 0081 1106-013</code></div>
+
+        <label style="font-size: 11px; color: #cbd5e1;">Seleccionar Formación / Coche:</label>
+        <select id="balise-car-select" onchange="onSelectBaliseCarChange()"></select>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <div>
+            <label style="font-size:10px; color:#cbd5e1;">Bloque 1 (2 dígitos):</label>
+            <input type="text" id="b-p1" value="61" maxlength="2" oninput="calcBaliseParts()">
+          </div>
+          <div>
+            <label style="font-size:10px; color:#cbd5e1;">Bloque 2 (4 dígitos):</label>
+            <input type="text" id="b-p2" value="0081" maxlength="4" oninput="calcBaliseParts()">
+          </div>
+          <div>
+            <label style="font-size:10px; color:#cbd5e1;">Bloque 3 (4 dígitos):</label>
+            <input type="text" id="b-p3" value="1106" maxlength="4" oninput="calcBaliseParts()">
+          </div>
+          <div>
+            <label style="font-size:10px; color:#cbd5e1;">Sufijo (3 dígitos):</label>
+            <input type="text" id="b-p4" value="013" maxlength="3" oninput="calcBaliseParts()">
+          </div>
+        </div>
+
+        <div style="margin-top: 8px;">
+          <div style="font-size: 11px; font-weight: bold; color: #cbd5e1; margin-bottom: 4px;">Valores Traducidos a Ingresar en FDI:</div>
+
+          <div class="calc-screen" style="margin-top:4px;">
+            <span style="font-size: 11px;">B1 (Offset 100): <b class="calc-val" id="out-b1" style="font-size:16px;">39</b></span>
+            <button class="btn-action" onclick="copyTxt(document.getElementById('out-b1').innerText)">Copiar</button>
+          </div>
+          <div class="calc-screen" style="margin-top:4px;">
+            <span style="font-size: 11px;">B2 (Offset 10.000): <b class="calc-val" id="out-b2" style="font-size:16px;">9919</b></span>
+            <button class="btn-action" onclick="copyTxt(document.getElementById('out-b2').innerText)">Copiar</button>
+          </div>
+          <div class="calc-screen" style="margin-top:4px;">
+            <span style="font-size: 11px;">B3 (Offset 10.000): <b class="calc-val" id="out-b3" style="font-size:16px;">8894</b></span>
+            <button class="btn-action" onclick="copyTxt(document.getElementById('out-b3').innerText)">Copiar</button>
+          </div>
+          <div class="calc-screen" style="margin-top:4px;">
+            <span style="font-size: 11px;">Sufijo (Offset 1.000): <b class="calc-val" id="out-b4" style="font-size:16px;">987</b></span>
+            <button class="btn-action" onclick="copyTxt(document.getElementById('out-b4').innerText)">Copiar</button>
+          </div>
+        </div>
+
+        <button class="btn-save" onclick="triggerProtectedAction(updateBaliseMeasurement)">Actualizar Baliza en Tren y Guardar Fecha</button>
+        <div id="save-balise-feedback" style="font-size: 11px; color: #f59e0b; text-align: center; margin-top: 6px; display: none;"></div>
+      </div>
+    </section>
+
+    <!-- 5. SOLAPA: DIAGNÓSTICO -->
+    <section id="tab-diag" class="tab-content">
+      <div class="panel">
+        <div style="font-weight: bold; color: #38bdf8; margin-bottom: 2px;">Catálogo Completo de Fallas y Eventos TGMT</div>
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 6px;">Búsqueda por código de manual (5.5.x), componente o palabra clave</div>
+        
+        <input type="text" id="diag-search" oninput="filterDiag()" placeholder="Buscar falla (ej: 5.5.2, EB, Baliza, Radar, OPG, HMI, VE5A)...">
+        
+        <select id="diag-cat" onchange="filterDiag()">
+          <option value="ALL">Todas las categorías</option>
+          <option value="EB">Frenado de Emergencia (EB / Lógica de Seguridad)</option>
+          <option value="Baliza">Balizas & Antena BTM</option>
+          <option value="ATP">Bastidor OBCU_ATP & Hardware Vital</option>
+          <option value="ATO_ITF">Bastidor OBCU_ATO & Pasarela ITF</option>
+          <option value="Odometría">Odometría (Radar Doppler & OPG)</option>
+          <option value="HMI">Pantalla HMI / DMI de Cabina</option>
+          <option value="Cabina">Entradas y Pulsadores de Cabina</option>
+        </select>
+      </div>
+      <div id="diag-list"></div>
+    </section>
+
+    <!-- 6. SOLAPA: MEDICIÓN & CABLES -->
+    <section id="tab-medir" class="tab-content">
+      <div class="panel">
+        <div style="font-weight: bold; color: #38bdf8; margin-bottom: 2px;">Guía de Medición con Multímetro</div>
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 6px;">Puntos de prueba exactos para puntas roja y negra en bornas, fusibles y conectores</div>
+        <input type="text" id="meter-search" oninput="filterMeter()" placeholder="Buscar señal o cable (ej: F472, EB, Puertas, Tracción, X731, X741)...">
+      </div>
+      <div id="meter-list"></div>
+    </section>
+
+    <!-- 7. SOLAPA: CABLEADO EXTERIOR -->
+    <section id="tab-cables" class="tab-content">
+      <div class="panel">
+        <div style="font-weight: bold; color: #38bdf8; margin-bottom: 2px;">Rastreo Punto a Punto ("De Dónde a Dónde")</div>
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Conexiones entre bastidor OBCU, distribuidor DIS y periferia del tren</div>
+
+        <select id="wire-filter" onchange="filterWires()">
+          <option value="ALL">Todos los circuitos</option>
+          <option value="FRENO">Freno de Emergencia (EB Loop y Readback)</option>
+          <option value="TRAC">Tracción y Propulsión</option>
+          <option value="PUERTAS">Puertas y Habilitación</option>
+          <option value="ODO">Odometría (Radar Doppler y OPG)</option>
+          <option value="BALISE">Antena Eurobalise (BTM)</option>
+        </select>
+      </div>
+      <div id="cables-list"></div>
+    </section>
+
+    <!-- 8. SOLAPA: MÓDULOS & FALLAS -->
+    <section id="tab-modulos" class="tab-content">
+      <div class="panel">
+        <div style="font-weight: bold; color: #38bdf8; margin-bottom: 2px;">Detalle de Módulos del Sistema</div>
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Función, indicación básica y escenario de falla según manual</div>
+        
+        <select id="mod-filter" onchange="filterModulos()">
+          <option value="ALL">Todos los bastidores</option>
+          <option value="ATP">Bastidor OBCU_ATP</option>
+          <option value="ATO_ITF">Bastidor OBCU_ATO / ITF</option>
+          <option value="HMI_CAB">HMI Pantalla Cabina</option>
+          <option value="DIS_AUX">Distribución y Auxiliares</option>
+        </select>
+      </div>
+      <div id="modulos-list"></div>
+    </section>
+
+    <!-- 9. SOLAPA: ESTADOS DE LEDS -->
+    <section id="tab-leds" class="tab-content">
+      <div class="panel">
+        <div style="font-weight: bold; color: #38bdf8; margin-bottom: 2px;">Estados de LED de Módulos OBCU</div>
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Guía de diagnóstico visual directo en bastidor</div>
+        
+        <select id="led-filter" onchange="filterLeds()">
+          <option value="ALL">Todas las placas</option>
+          <option value="VE5A">VE5A (Kernel Vital ATP)</option>
+          <option value="SV5">SV5 (Fuente Alimentación ATP)</option>
+          <option value="RECA">RECA (Receptor Eurobalise)</option>
+          <option value="LBTM5">LBTM5 (Transmisión Baliza)</option>
+          <option value="ATO_CPU">CPU ATO / CPU ITF</option>
+          <option value="SW">LAN Switch</option>
+          <option value="FAN">Fan Unit (Ventilación)</option>
+        </select>
+
+        <div id="leds-container"></div>
+      </div>
+    </section>
+
+    <!-- 10. SOLAPA: FUSIBLES DIS -->
+    <section id="tab-fusibles" class="tab-content">
+      <div class="panel">
+        <div style="font-weight: bold; color: #38bdf8; margin-bottom: 2px;">Fusibles del Distribuidor OBCU_DIS</div>
+        <div style="font-size: 11px; color: #94a3b8; margin-bottom: 8px;">Módulos porta-fusibles de conexión frontal (Bastidor de 19")</div>
+
+        <table>
+          <thead>
+            <tr>
+              <th>Fusible</th>
+              <th>Corriente</th>
+              <th>Circuito Protegido</th>
+            </tr>
+          </thead>
+          <tbody id="fuses-tbody"></tbody>
+        </table>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // --- CONEXIÓN DIRECTA A JSONBIN CON MASTER KEY ---
+    const JSONBIN_URL = "https://api.jsonbin.io/v3/b/6a999cc9f5f4af5e29662770";
+    const MASTER_KEY = "$2a$10$iT35uz8HmVqGbwf4Blcj3uW2RcAHdesc09LbLLP8chqTJS/aMq/Du";
+
+    async function getFleetData() {
+        try {
+            let response = await fetch(JSONBIN_URL + "?t=" + new Date().getTime(), {
+                headers: {
+                    'X-Master-Key': MASTER_KEY
+                }
+            });
+            if (response.ok) {
+                let json = await response.json();
+                if (json && json.record && json.record.fleet) {
+                    return json.record.fleet;
+                }
+            }
+        } catch (e) {
+            console.error("Error al leer de la nube, usando respaldo local", e);
+        }
+        
+        let stored = localStorage.getItem("tgmt_fleet_official_v6");
+        if (stored) {
+            try { return JSON.parse(stored); } catch (e) {}
+        }
+        return OFFICIAL_FLEET_DATA;
+    }
+
+    async function saveFleetData(fleetData) {
+        localStorage.setItem("tgmt_fleet_official_v6", JSON.stringify(fleetData));
+        
+        try {
+            let response = await fetch(JSONBIN_URL, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Master-Key': MASTER_KEY
+                },
+                body: JSON.stringify({ fleet: fleetData })
+            });
+            if (response.ok) {
+                console.log("¡Sincronizado en la nube con éxito!");
+            } else {
+                console.error("Error al actualizar la nube.");
+            }
+        } catch (error) {
+            console.error("Error de red al guardar en la nube:", error);
+        }
+    }
+
+    async function syncAndRefresh() {
+        await initCarSelect();
+        await initBaliseCarSelect();
+        await renderWheelCards();
+        alert("¡Datos sincronizados desde la nube con éxito!");
+    }
+
+    function showTab(id, btn) {
+      var tabs = document.querySelectorAll('.tab-content');
+      for (var i = 0; i < tabs.length; i++) tabs[i].classList.remove('active');
+      var btns = document.querySelectorAll('.nav-btn');
+      for (var j = 0; j < btns.length; j++) btns[j].classList.remove('active');
+      document.getElementById('tab-' + id).classList.add('active');
+      btn.classList.add('active');
+      if (id === 'ruedas-view') renderWheelCards();
+    }
+
+    function copyTxt(text) {
+      navigator.clipboard.writeText(text);
+      alert("Copiado: " + text);
+    }
+
+    function getNowDateStr() {
+      var now = new Date();
+      var yyyy = now.getFullYear();
+      var mm = String(now.getMonth() + 1).padStart(2, '0');
+      var dd = String(now.getDate()).padStart(2, '0');
+      var hh = String(now.getHours()).padStart(2, '0');
+      var min = String(now.getMinutes()).padStart(2, '0');
+      return yyyy + "-" + mm + "-" + dd + " " + hh + ":" + min;
+    }
+
+    // --- SEGURIDAD: AUTENTICACIÓN ADMIN ---
+    var isAdminAuthenticated = false;
+    var pendingAction = null;
+
+    function updateAuthTagUI() {
+      var tag = document.getElementById('auth-status-tag');
+      if (isAdminAuthenticated) {
+        tag.className = "auth-tag auth-admin";
+        tag.innerText = "Admin Activo";
+      } else {
+        tag.className = "auth-tag auth-guest";
+        tag.innerText = "Lectura";
+      }
+    }
+
+    function toggleAuthStatus() {
+      if (isAdminAuthenticated) {
+        if (confirm("¿Desea cerrar la sesión de Administrador y volver a modo Solo Lectura?")) {
+          isAdminAuthenticated = false;
+          updateAuthTagUI();
+        }
+      } else {
+        openAuthModal(null);
+      }
+    }
+
+    function openAuthModal(callback) {
+      pendingAction = callback;
+      document.getElementById('auth-user').value = '';
+      document.getElementById('auth-pass').value = '';
+      document.getElementById('auth-error').style.display = 'none';
+      document.getElementById('auth-modal').style.display = 'flex';
+      document.getElementById('auth-user').focus();
+    }
+
+    function closeAuthModal() {
+      document.getElementById('auth-modal').style.display = 'none';
+      pendingAction = null;
+    }
+
+    function submitAuth() {
+      var u = document.getElementById('auth-user').value.trim();
+      var p = document.getElementById('auth-pass').value.trim();
+
+      if (u === "admin" && p === "inicio.1") {
+        isAdminAuthenticated = true;
+        updateAuthTagUI();
+        document.getElementById('auth-modal').style.display = 'none';
+        if (typeof pendingAction === 'function') {
+          var act = pendingAction;
+          pendingAction = null;
+          act();
+        }
+      } else {
+        document.getElementById('auth-error').style.display = 'block';
+      }
+    }
+
+    function triggerProtectedAction(actionFn) {
+      if (isAdminAuthenticated) {
+        actionFn();
+      } else {
+        openAuthModal(actionFn);
+      }
+    }
+
+    // BASE DE DATOS OFICIAL PRECARGADA (RESPALDO LÍNEA H)
+    var OFFICIAL_FLEET_DATA = [
+      { name: "A301", car: 301, obcu: 1200, wheel: 823, calibr: 994, bant: "61 0081 1106-060", date: "2024-12-05" },
+      { name: "A302", car: 302, obcu: 1202, wheel: 855, calibr: 996, bant: "61 0081 1106-013", date: "2026-08-08 05:20" },
+      { name: "A303", car: 303, obcu: 1204, wheel: 817, calibr: 1015, bant: "61 0081 1106-015", date: "2024-12-07" },
+      { name: "A304", car: 304, obcu: 1206, wheel: 836, calibr: 992, bant: "61 0081 1106-078", date: "2024-12-05" },
+      { name: "A305", car: 305, obcu: 1208, wheel: 821, calibr: 988, bant: "61 0081 1106-088", date: "2024-12-05" },
+      { name: "A306", car: 306, obcu: 1210, wheel: 830, calibr: 1001, bant: "61 0078 0579-093", date: "2024-12-07" },
+      { name: "A307", car: 307, obcu: 1212, wheel: 804, calibr: 987, bant: "61 0081 1106-009", date: "2024-12-07" },
+      { name: "A308", car: 308, obcu: 1214, wheel: 811, calibr: 1004, bant: "61 0081 1106-017", date: "2024-12-05" },
+      { name: "A309", car: 309, obcu: 1216, wheel: 828, calibr: 996, bant: "61 0081 1106-073", date: "2024-12-05" },
+      { name: "A310", car: 310, obcu: 1218, wheel: 830, calibr: 1000, bant: "61 0081 1106-098", date: "2024-12-07" },
+      { name: "A311", car: 311, obcu: 1220, wheel: 815, calibr: 1007, bant: "61 0081 1106-115", date: "2024-12-07" },
+      { name: "A312", car: 312, obcu: 1222, wheel: 819, calibr: 994, bant: "61 0081 1106-003", date: "2024-12-07" },
+      { name: "A313", car: 313, obcu: 1224, wheel: 822, calibr: 996, bant: "61 0081 1106-084", date: "2024-12-05" },
+      { name: "A316", car: 316, obcu: 1230, wheel: 847, calibr: 1005, bant: "61 0081 1106-024", date: "2024-12-07" },
+      { name: "A321", car: 321, obcu: 1226, wheel: 841, calibr: 996, bant: "61 0081 1106-074", date: "2024-12-07" }
+    ];
+
+    // --- PANEL RÁPIDO DE RUEDAS ---
+    var currentWheelViewFilter = 'ALL';
+
+    function setWheelViewFilter(filter, btn) {
+      currentWheelViewFilter = filter;
+      var btns = document.querySelectorAll('.btn-filter');
+      for (var i = 0; i < btns.length; i++) btns[i].classList.remove('active');
+      btn.classList.add('active');
+      renderWheelCards();
+    }
+
+    function getWheelColorDetails(w) {
+      if (w >= 850) {
+        return { cls: "badge-green", border: "card-green", label: "Excelente" };
+      } else if (w >= 820) {
+        return { cls: "badge-yellow", border: "card-yellow", label: "Normal" };
+      } else if (w >= 790) {
+        return { cls: "badge-orange", border: "card-orange", label: "Atención" };
+      } else {
+        return { cls: "badge-red", border: "card-red", label: "Condena" };
+      }
+    }
+
+    async function renderWheelCards() {
+      var fleet = await getFleetData();
+      var q = (document.getElementById('wheel-quick-search') ? document.getElementById('wheel-quick-search').value.toLowerCase() : '');
+      var container = document.getElementById('wheel-cards-container');
+      
+      var cAll = 0, cGreen = 0, cYellow = 0, cOrange = 0, cRed = 0;
+      var html = '';
+
+      for (var i = 0; i < fleet.length; i++) {
+        var item = fleet[i];
+        var w = parseFloat(item.wheel);
+        var col = getWheelColorDetails(w);
+
+        cAll++;
+        if (w >= 850) cGreen++;
+        else if (w >= 820) cYellow++;
+        else if (w >= 790) cOrange++;
+        else cRed++;
+
+        if (currentWheelViewFilter === 'GREEN' && !(w >= 850)) continue;
+        if (currentWheelViewFilter === 'YELLOW' && !(w >= 820 && w < 850)) continue;
+        if (currentWheelViewFilter === 'ORANGE' && !(w >= 790 && w < 820)) continue;
+        if (currentWheelViewFilter === 'RED' && !(w < 790)) continue;
+
+        var textMatch = item.name.toLowerCase().indexOf(q) !== -1 ||
+                        String(item.obcu).indexOf(q) !== -1 ||
+                        (item.date && item.date.toLowerCase().indexOf(q) !== -1) ||
+                        (item.bant && item.bant.toLowerCase().indexOf(q) !== -1);
+        if (!textMatch) continue;
+
+        var fdiVal = 1000 - w;
+
+        html += '<div class="wheel-card ' + col.border + '">' +
+          '<div class="wheel-info">' +
+            '<h3>' + item.name + ' <span style="font-size:11px; font-weight:normal; color:#94a3b8;">(OBCU ' + item.obcu + ')</span></h3>' +
+            '<div class="wheel-meta">Control: <b style="color:#e2e8f0;">' + (item.date || 'Sin fecha') + '</b></div>' +
+            '<div class="wheel-meta">Radar: <b style="color:#38bdf8;">' + (item.calibr || '-') + '</b> | Baliza: <b style="color:#f59e0b;">' + (item.bant || '-') + '</b></div>' +
+          '</div>' +
+          '<div class="wheel-val-box">' +
+            '<span class="wheel-badge ' + col.cls + '">' + w + ' mm</span>' +
+            '<div class="fdi-tag">FDI Rueda: <b>' + fdiVal + '</b></div>' +
+          '</div>' +
+        '</div>';
+      }
+
+      if (html === '') {
+        html = '<div style="text-align:center; padding:20px; color:#64748b;">No hay formaciones con ese criterio.</div>';
+      }
+
+      container.innerHTML = html;
+
+      if (document.getElementById('cnt-all')) {
+        document.getElementById('cnt-all').innerText = cAll;
+        document.getElementById('cnt-green').innerText = cGreen;
+        document.getElementById('cnt-yellow').innerText = cYellow;
+        document.getElementById('cnt-orange').innerText = cOrange;
+        document.getElementById('cnt-red').innerText = cRed;
+      }
+    }
+
+    // --- SOLAPA 2: SELECTORES Y ACTUALIZACIÓN DE RUEDA Y RADAR ---
+    async function initCarSelect() {
+      var fleet = await getFleetData();
+      var options = '';
+      for (var i = 0; i < fleet.length; i++) {
+        options += '<option value="' + fleet[i].car + '">' + fleet[i].name + ' (OBCU ' + fleet[i].obcu + ' - ' + fleet[i].wheel + ' mm)</option>';
+      }
+      document.getElementById('wheel-car-select').innerHTML = options;
+      onSelectCarChange();
+    }
+
+    async function onSelectCarChange() {
+      var carNum = parseInt(document.getElementById('wheel-car-select').value);
+      var fleet = await getFleetData();
+      for (var i = 0; i < fleet.length; i++) {
+        if (fleet[i].car === carNum) {
+          document.getElementById('fdi-wheel-in').value = fleet[i].wheel;
+          document.getElementById('fdi-radar-in').value = fleet[i].calibr || 1000;
+          document.getElementById('disp-calibr').innerText = fleet[i].calibr || '-';
+          document.getElementById('disp-obcu').innerText = fleet[i].obcu || '-';
+          document.getElementById('disp-bant').innerText = fleet[i].bant || '-';
+          calcWheelFDI();
+          calcRadarFDI();
+          break;
+        }
+      }
+    }
+
+    function calcWheelFDI() {
+      var w = parseFloat(document.getElementById('fdi-wheel-in').value) || 0;
+      document.getElementById('fdi-wheel-out').innerText = (1000 - w);
+    }
+
+    function calcRadarFDI() {
+      var r = parseFloat(document.getElementById('fdi-radar-in').value) || 0;
+      document.getElementById('fdi-radar-out').innerText = (1000 - r);
+    }
+
+    async function updateCarMeasurement() {
+      var carNum = parseInt(document.getElementById('wheel-car-select').value);
+      var newWheel = parseFloat(document.getElementById('fdi-wheel-in').value);
+      if (!newWheel || newWheel < 700 || newWheel > 950) {
+        alert("Ingrese un diámetro válido (ej: entre 750 y 900 mm).");
+        return;
+      }
+
+      var dateStr = getNowDateStr();
+      var fleet = await getFleetData();
+      var trainName = '';
+      for (var i = 0; i < fleet.length; i++) {
+        if (fleet[i].car === carNum) {
+          fleet[i].wheel = newWheel;
+          fleet[i].date = dateStr;
+          trainName = fleet[i].name;
+          break;
+        }
+      }
+
+      await saveFleetData(fleet);
+      await initCarSelect();
+      await initBaliseCarSelect();
+      document.getElementById('wheel-car-select').value = carNum;
+      await renderWheelCards();
+
+      var feedback = document.getElementById('save-feedback');
+      feedback.style.display = 'block';
+      feedback.innerText = trainName + " actualizado con rueda " + newWheel + " mm el " + dateStr;
+      setTimeout(function() { feedback.style.display = 'none'; }, 4000);
+    }
+
+    async function updateRadarMeasurement() {
+      var carNum = parseInt(document.getElementById('wheel-car-select').value);
+      var newRadar = parseFloat(document.getElementById('fdi-radar-in').value);
+      if (!newRadar || newRadar < 900 || newRadar > 1100) {
+        alert("Ingrese un valor de calibración de radar válido (ej: entre 950 y 1050).");
+        return;
+      }
+
+      var dateStr = getNowDateStr();
+      var fleet = await getFleetData();
+      var trainName = '';
+      for (var i = 0; i < fleet.length; i++) {
+        if (fleet[i].car === carNum) {
+          fleet[i].calibr = newRadar;
+          fleet[i].date = dateStr;
+          trainName = fleet[i].name;
+          document.getElementById('disp-calibr').innerText = newRadar;
+          break;
+        }
+      }
+
+      await saveFleetData(fleet);
+      await renderWheelCards();
+
+      var feedback = document.getElementById('save-radar-feedback');
+      feedback.style.display = 'block';
+      feedback.innerText = trainName + " calibración radar guardada (" + newRadar + ") el " + dateStr;
+      setTimeout(function() { feedback.style.display = 'none'; }, 4000);
+    }
+
+    // --- SOLAPA 4: GESTIÓN Y ACTUALIZACIÓN DE ID DE BALIZA ---
+    async function initBaliseCarSelect() {
+      var fleet = await getFleetData();
+      var options = '';
+      for (var i = 0; i < fleet.length; i++) {
+        options += '<option value="' + fleet[i].car + '">' + fleet[i].name + ' (BANT: ' + (fleet[i].bant || '-') + ')</option>';
+      }
+      var sel = document.getElementById('balise-car-select');
+      if (sel) {
+        sel.innerHTML = options;
+        onSelectBaliseCarChange();
+      }
+    }
+
+    async function onSelectBaliseCarChange() {
+      var carNum = parseInt(document.getElementById('balise-car-select').value);
+      var fleet = await getFleetData();
+      for (var i = 0; i < fleet.length; i++) {
+        if (fleet[i].car === carNum) {
+          var str = fleet[i].bant || "61 0081 1106-000";
+          var p = parseBaliseString(str);
+          document.getElementById('b-p1').value = p.p1;
+          document.getElementById('b-p2').value = p.p2;
+          document.getElementById('b-p3').value = p.p3;
+          document.getElementById('b-p4').value = p.p4;
+          calcBaliseParts();
+          break;
+        }
+      }
+    }
+
+    function parseBaliseString(s) {
+      var clean = s.replace(/\s+/g, ' ').replace('-', ' ');
+      var parts = clean.split(' ');
+      return {
+        p1: parts[0] || "61",
+        p2: parts[1] || "0081",
+        p3: parts[2] || "1106",
+        p4: parts[3] || "000"
+      };
+    }
+
+    function calcBaliseParts() {
+      var p1 = parseFloat(document.getElementById('b-p1').value) || 0;
+      var p2 = parseFloat(document.getElementById('b-p2').value) || 0;
+      var p3 = parseFloat(document.getElementById('b-p3').value) || 0;
+      var p4 = parseFloat(document.getElementById('b-p4').value) || 0;
+
+      document.getElementById('out-b1').innerText = 100 - p1;
+      document.getElementById('out-b2').innerText = 10000 - p2;
+      document.getElementById('out-b3').innerText = 10000 - p3;
+      document.getElementById('out-b4').innerText = 1000 - p4;
+    }
+
+    async function updateBaliseMeasurement() {
+      var carNum = parseInt(document.getElementById('balise-car-select').value);
+      var p1 = document.getElementById('b-p1').value.trim();
+      var p2 = document.getElementById('b-p2').value.trim();
+      var p3 = document.getElementById('b-p3').value.trim();
+      var p4 = document.getElementById('b-p4').value.trim();
+
+      if (!p1 || !p2 || !p3 || !p4) {
+        alert("Complete todos los bloques de la baliza.");
+        return;
+      }
+
+      var formattedBant = p1 + " " + p2 + " " + p3 + "-" + p4;
+      var dateStr = getNowDateStr();
+      var fleet = await getFleetData();
+      var trainName = '';
+
+      for (var i = 0; i < fleet.length; i++) {
+        if (fleet[i].car === carNum) {
+          fleet[i].bant = formattedBant;
+          fleet[i].date = dateStr;
+          trainName = fleet[i].name;
+          break;
+        }
+      }
+
+      await saveFleetData(fleet);
+      await initBaliseCarSelect();
+      await initCarSelect();
+      document.getElementById('balise-car-select').value = carNum;
+      await renderWheelCards();
+
+      var feedback = document.getElementById('save-balise-feedback');
+      feedback.style.display = 'block';
+      feedback.innerText = trainName + " actualizada con Baliza " + formattedBant + " el " + dateStr;
+      setTimeout(function() { feedback.style.display = 'none'; }, 4000);
+    }
+
+    // BASE DE DATOS COMPLETA DE DIAGNÓSTICO (CAP 5.5)
+    var db = [
+      { id: "5.5.2.1.1", t: "Telegrama de Baliza no esperado (Unexpected Balise)", c: "Baliza", b: "badge-balise",
+        causes: ["Baliza leída fuera de orden geográfico", "Pérdida de sincronismo odométrico previo", "Error en base de datos de vía (TDB)"],
+        acts: ["Verificar versión de TDB cargada en OBCU", "Revisar calibración de odometría y diámetro de rueda", "Comprobar orden físico de balizas en vía"]
+      },
+      { id: "5.5.2.1.2", t: "Baliza no leída en ventana de expectativa (Balise not read in window)", c: "Baliza", b: "badge-balise",
+        causes: ["Baliza ausente, dañada o con telegrama ilegible", "Antena BTM descalibrada, suelta o rota", "Falla de odometría (desvío acumulado > tolerancia)", "Baliza desplazada físicamente en la vía"],
+        acts: ["Inspeccionar visualmente antena BTM y medir fijación mecánica", "Comprobar conexiones en placa Odo5, OPG y radar Doppler", "Revisar versión de TDB y diámetro de ruedas en FDI", "Recalibrar radar Doppler si la adherencia es irregular"]
+      },
+      { id: "5.5.2.1.3", t: "Baliza leída fuera de ventana de expectativa (Balise outside window)", c: "Baliza", b: "badge-balise",
+        causes: ["Odometría descalibrada por patinamiento prolongado", "Baliza reubicada en obra sin actualizar TDB en la flota", "TDB obsoleta a bordo"],
+        acts: ["Verificar versión de TDB activa en OBCU_ITF y ATO", "Chequear pulso de OPG y factor de calibración de radar", "Confirmar con topografía de vía las distancias kilométricas reales"]
+      },
+      { id: "5.5.2.1.4", t: "Telegrama por defecto recibido (LEU no conectado)", c: "Baliza", b: "badge-balise",
+        causes: ["Gabinete LEU MT de vía desenergizado", "Cable entre LEU y baliza cortado o desconectado", "Falla en tarjeta Tesa del LEU", "Baliza transparente de señal averiada"],
+        acts: ["Comprobar fusibles y fuente de alimentación en gabinete LEU de vía", "Medir continuidad en manguera LEU-baliza", "Probar tarjeta Tesa con la consola de test y programación LEU MT", "Verificar suma de control MD4 de la baliza"]
+      },
+      { id: "5.5.2.1.5", t: "Versión de baliza Trainguard MT incorrecta", c: "Baliza", b: "badge-balise",
+        causes: ["Base de datos TDB actualizada en trenes pero balizas sin reprogramar", "Balizas reprogramadas en vía pero tren con TDB desfasada"],
+        acts: ["Homogeneizar versión de TDB en toda la flota de trenes", "Verificar programación de telegrama en baliza mediante equipo portátil TPG"]
+      },
+      { id: "5.5.2.1.6", t: "Telegrama de Baliza corrupto / CRC inválido", c: "Baliza", b: "badge-balise",
+        causes: ["Interferencia electromagnética severa bajo bogie", "Cable coaxial de antena BTM aplastado o sin blindaje", "Baliza de vía golpeada o descalibrada"],
+        acts: ["Revisar blindaje de cables coaxiales hacia RECA/TRMA", "Medir aislamiento coaxial (> 1 MΩ)", "Verificar si la baliza presenta fisuras o agua en su resina"]
+      },
+      { id: "5.5.2.2.6", t: "EB por supervisión de velocidad (Overspeed - EBIC)", c: "EB", b: "badge-eb",
+        causes: ["Superación de curva de frenado de emergencia (EBIC)", "Tren superó velocidad máxima estática o restricción temporal (TSR)", "Pérdida momentánea de lectura odométrica"],
+        acts: ["En modo SM/RM: respetar velocidad autorizada en HMI", "En modo AM: chequear discrepancia de pulsos entre OPG y radar", "Verificar adherencia y estado del receptor de radio RCS"]
+      },
+      { id: "5.5.2.2.7", t: "EB por supervisión de retroceso (Rollback)", c: "EB", b: "badge-eb",
+        causes: ["Tren retrocedió más de 40 cm en régimen normal", "Retroceso superior a 10 cm tras un EB previo", "Retención neumática de frenos insuficiente", "Inversor de marcha conmutado en sentido opuesto"],
+        acts: ["Revisar sistema de freno de estacionamiento y retención del material rodante", "Comprobar señales de dirección de giro en Odo5 y tacogenerador OPG"]
+      },
+      { id: "5.5.2.2.8", t: "EB por supervisión de puertas (Doors opened while moving)", c: "EB", b: "badge-eb",
+        causes: ["Apertura física de puerta con tren en movimiento", "Falso contacto o apertura en el lazo de puertas cerradas de formación"],
+        acts: ["Revisar lazo serie de puertas en conector Harting X741", "Medir 24V del lazo de supervisión y contactos de relés en bastidor"]
+      },
+      { id: "5.5.2.2.9", t: "EB por pérdida de localización (Delocalization)", c: "EB", b: "badge-eb",
+        causes: ["Balizas consecutivas perdidas", "Pérdida de lazo de integridad de formación", "Agua acumulada o reflectividad nula bajo el haz del radar", "Diámetro de ruedas fuera de tolerancia (> 0.5% de desvío)"],
+        acts: ["Verificar antena BTM, radar Doppler y OPG", "Comprobar fusible de cabina remota y cables puente (jumpers)", "Ajustar y verificar en FDI el diámetro real medido en ruedas"]
+      },
+      { id: "5.5.2.2.11", t: "EB por falla de hardware: Falla de readback de EB", c: "EB", b: "badge-eb",
+        causes: ["Relé vital de freno en módulo SRAUS5 averiado o soldado", "Circuito de retorno (readback) interrumpido", "Fusible F479 quemado en distribuidor"],
+        acts: ["Comprobar relés guiados de seguridad en módulo SRAUS5", "Medir 120V en borna de salida X4-479 de OBCU_DIS", "Sustituir placa SRAUS5 si no cierra lazo"]
+      },
+      { id: "5.5.2.2.22", t: "EB por pérdida de comunicación por radio (Radio Timeout)", c: "EB", b: "badge-comm",
+        causes: ["Timeout de frescura de radio excedido (sin MAs desde WCU)", "Falla de radio de abordo (CRU/Módem Airlink)", "Punto de acceso Wi-Fi/LTE en túnel desenergizado", "Falla de enlace Ethernet con CPU ITF"],
+        acts: ["Verificar módem y antena de radio sobre techo del tren", "Chequear puntos de acceso (AP) del tramo de túnel", "Comprobar LEDs de enlace en switch LAN 02F301 y CPU ITF"]
+      },
+      { id: "5.5.2.2.45", t: "EB por falla crítica de odometría (Odometry failure)", c: "EB", b: "badge-hw",
+        causes: ["Falla total simultánea de OPG y radar Doppler", "Desconexión de cable frontal en placa Odo5"],
+        acts: ["Verificar conector frontal de 48 pines de tarjeta Odo5", "Medir 24V de alimentación a sensores en conector Harting X731"]
+      },
+      { id: "5.5.2.2.48", t: "EB por discrepancia en fusión de sensores (Sensor Fusion Error)", c: "EB", b: "badge-hw",
+        causes: ["Discrepancia grave entre pulsos de OPG y señal Doppler de radar (> 15% persistente)", "Patinamiento severo no compensado"],
+        acts: ["Entrar a FDI y diagnosticar estado de cada sensor", "Revisar fijación mecánica y suciedad en lente del radar Doppler", "Comprobar lengüeta de arrastre de OPG en eje"]
+      },
+      { id: "5.5.2.2.56", t: "Consistencia de tren interrumpida (Train consist disrupted)", c: "EB", b: "badge-eb",
+        causes: ["Lazo de integridad de formación cortado", "Falla en contactos de acoplador intermedio o puente jumper", "Fusible de alimentación en cabina remota abierto"],
+        acts: ["Medir continuidad del lazo de integridad en conector Harting X741", "Revisar cables puente entre fuelles de coches", "Verificar fusibles auxiliares de cabina remota"]
+      },
+      { id: "5.5.2.3.3", t: "Falla en módulo VE5A (Kernel Vital ATP)", c: "ATP", b: "badge-hw",
+        causes: ["Interruptor Reset bloqueado en panel frontal", "Falla interna de CPU vital 2-out-of-2 o disparo de Watchdog", "Tensión incorrecta desde fuente SV5"],
+        acts: ["Verificar llave Reset en frente de módulo VE5A", "Reiniciar bastidor OBCU completo", "Si LEDs LA/LB permanecen en rojo, sustituir tarjeta VE5A", "Cargar software homologado post reemplazo"]
+      },
+      { id: "5.5.2.3.5", t: "Falla en módulo Odo5 (Odometry Unit)", c: "ATP", b: "badge-hw",
+        causes: ["Falla en receptor analógico OPG o radar", "Pines doblados o flojos en conector frontal", "Falla interna en placa Odo5 (SCN S25391-B91-A2)"],
+        acts: ["Desenergizar rack y reemplazar placa Odo5", "Comprobar que el bus Ikon entregue tren de pulsos hacia módulo ATO"]
+      },
+      { id: "5.5.2.3.9", t: "Falla en módulo SRAUS5 (Vital Relay Output)", c: "ATP", b: "badge-hw",
+        causes: ["Bobina de relé de seguridad quemada o contactos soldados", "Fusible interno de placa fundido"],
+        acts: ["Verificar continuidad en bornas de salida de EB", "Reemplazar módulo SRAUS5 (SCN S25391-B92-A24)"]
+      },
+      { id: "5.5.2.9.1", t: "Falla en unidad de radar Doppler", c: "Odometría", b: "badge-hw",
+        causes: ["Sensor sin alimentación 24V DC", "Sensor averiado generando frecuencia saturada (> 41.666 Hz = 600 km/h)", "Humedad o suciedad en lente del conector"],
+        acts: ["Medir 24V DC en conector Harting X731", "Prueba funcional de proximidad con mano a 20 cm para verificar generación de pulsos", "Plazo máximo de recambio: 7 días", "Realizar calibración obligatoria con K-Tool tras su reemplazo"]
+      },
+      { id: "5.5.2.9.3", t: "Falla en tacogenerador OPG (Punta de eje)", c: "Odometría", b: "badge-hw",
+        causes: ["Lengüeta mecánica de arrastre en eje rota o desalineada", "Cable de bogie cortado por vibración", "Sensor inductivo interno quemado"],
+        acts: ["Inspeccionar físicamente acople mecánico en la punta de eje de bogie", "Medir continuidad y pulsos TTL (0 a 5V) en conector Harting X731"]
+      }
+    ];
+
+    function renderCards(list) {
+      var h = '';
+      for (var i = 0; i < list.length; i++) {
+        var x = list[i];
+        h += '<div class="f-card">' +
+             '<div class="f-head"><span class="f-code">' + x.id + '</span><span class="f-badge ' + x.b + '">' + x.c + '</span></div>' +
+             '<div class="f-title">' + x.t + '</div>' +
+             '<div class="f-sec sec-cause">Causas probables:</div><ul>';
+        for (var c = 0; c < x.causes.length; c++) h += '<li>' + x.causes[c] + '</li>';
+        h += '</ul><div class="f-sec sec-act">Medidas / Acciones correctivas:</div><ol>';
+        for (var a = 0; a < x.acts.length; a++) h += '<li>' + x.acts[a] + '</li>';
+        h += '</ol></div>';
+      }
+      document.getElementById('diag-list').innerHTML = h;
+    }
+
+    function filterDiag() {
+      var q = document.getElementById('diag-search').value.toLowerCase();
+      var cat = document.getElementById('diag-cat').value;
+      var out = [];
+      for (var i = 0; i < db.length; i++) {
+        var item = db[i];
+        var matchText = item.t.toLowerCase().indexOf(q) !== -1 || 
+                        item.id.indexOf(q) !== -1 || 
+                        item.c.toLowerCase().indexOf(q) !== -1;
+        var matchCat = (cat === 'ALL') || (item.c === cat);
+        if (matchText && matchCat) out.push(item);
+      }
+      renderCards(out);
+    }
+
+    var meterDb = [
+      {
+        target: "Lazo Freno de Emergencia (Fusibles F472 / F473 en OBCU_DIS)",
+        type: "VOLTS DC",
+        badge: "badge-volt",
+        red: "Extremos de fusible F472 o F473 (3A) en OBCU_DIS",
+        black: "0V Negativo de Batería / Masa chasis",
+        normal: "110 V a 120 V DC en entrada y salida de fusible",
+        bad: "Tensión en entrada y 0V en salida: Fusible F472/F473 fundido. Si hay 0V en ambos, corte en lazo de seguridad de material rodante (RST)."
+      },
+      {
+        target: "Readback de Freno de Emergencia (Fusible F479 / X4-479)",
+        type: "VOLTS DC",
+        badge: "badge-volt",
+        red: "Borna de salida X4-479 en distribuidor OBCU_DIS",
+        black: "0V Negativo de Batería",
+        normal: "120 V DC con tren en servicio y freno aflojado",
+        bad: "0 V permanente: Dispara falla 5.5.2.2.11 (EB readback failed). Fusible F479 quemado o contacto guiado de SRAUS5 dañado."
+      },
+      {
+        target: "Relé de Tracción / Propulsión (Fusible F474 / Conector X743)",
+        type: "VOLTS DC",
+        badge: "badge-volt",
+        red: "Borna de salida fusible F474 (0.4A) / Pin en X743",
+        black: "0V Negativo de Batería",
+        normal: "110 V a 120 V DC cuando ATO/ATP autoriza tracción",
+        bad: "0 V DC con tren en condiciones de marchar: Fusible F474 abierto, relé de propulsión bloqueado o corte en circuito de tracción de RST."
+      },
+      {
+        target: "Lazo de Puertas Cerradas (Supervisión Vital Dio5 / X741)",
+        type: "VOLTS DC",
+        badge: "badge-volt",
+        red: "Borna de entrada lazo puertas en Harting X741",
+        black: "0V Retorno en X741",
+        normal: "24 V DC (Lectura doble sincronizada canal A y B)",
+        bad: "0 V con puertas mecánicamente cerradas: Dispara falla 5.5.2.2.8. Microinterruptor de puerta abierto o cable pasante cortado."
+      },
+      {
+        target: "Alimentación Radar Doppler (24V DC en Harting X731)",
+        type: "VOLTS DC",
+        badge: "badge-volt",
+        red: "Pin positivo alimentación en conector Harting X731",
+        black: "Pin 0V retorno en X731",
+        normal: "24 V DC continuo regulado desde placa Odo5",
+        bad: "0 V DC: Falla interna en módulo Odo5 o cortocircuito en manguera de bogie. Dispara 5.5.2.9.1 (Faulty radar unit)."
+      }
+    ];
+
+    function renderMeter(list) {
+      var h = '';
+      for (var i = 0; i < list.length; i++) {
+        var m = list[i];
+        h += '<div class="m-card">' +
+             '<div class="m-head"><span class="m-code">' + m.type + '</span><span class="m-badge ' + m.badge + '">' + m.type + '</span></div>' +
+             '<div class="m-title">' + m.target + '</div>' +
+             '<div class="test-box">' +
+               '<div class="test-row"><span class="test-label">Punta ROJA (+):</span><span class="test-val" style="color:#f87171;">' + m.red + '</span></div>' +
+               '<div class="test-row"><span class="test-label">Punta NEGRA (-):</span><span class="test-val" style="color:#94a3b8;">' + m.black + '</span></div>' +
+             '</div>' +
+             '<div class="m-sec sec-val">Lectura normal en buen estado:</div>' +
+             '<p style="font-size:12px; color:#a7f3d0; margin-top:1px; font-weight:bold;">' + m.normal + '</p>' +
+             '<div class="m-sec sec-diag">Si da fuera de rango o 0:</div>' +
+             '<p style="font-size:12px; color:#fca5a5; margin-top:1px;">' + m.bad + '</p>' +
+             '</div>';
+      }
+      document.getElementById('meter-list').innerHTML = h;
+    }
+
+    function filterMeter() {
+      var q = document.getElementById('meter-search').value.toLowerCase();
+      var out = [];
+      for (var i = 0; i < meterDb.length; i++) {
+        var item = meterDb[i];
+        var match = item.target.toLowerCase().indexOf(q) !== -1 ||
+                    item.red.toLowerCase().indexOf(q) !== -1 ||
+                    item.black.toLowerCase().indexOf(q) !== -1 ||
+                    item.bad.toLowerCase().indexOf(q) !== -1 ||
+                    item.type.toLowerCase().indexOf(q) !== -1;
+        if (match) out.push(item);
+      }
+      renderMeter(out);
+    }
+
+    var cablesDb = [
+      {
+        cat: "FRENO",
+        title: "Lazo Vital de Freno de Emergencia (EB Loop)",
+        from: "Placa SRAUS5 (Rack ATP) &rarr; Fusibles F472/F473 (DIS)",
+        to: "Lazo de Emergencia Electroneumático Material Rodante (RST)",
+        type: "Lazo serie cerrado a 120V DC pasando por conector Harting X741",
+        details: "Si se abre por orden de ATP o fusión de F472/F473, desenergiza las válvulas de freno y aplica EB instantáneo."
+      },
+      {
+        cat: "TRAC",
+        title: "Comando de Tracción y Propulsión (Permiso de Marcha)",
+        from: "Fusible F474 en OBCU_DIS (0.4A / 120V)",
+        to: "Lógica de tracción y corte de tracción del tren (RST) vía X743",
+        type: "Línea de control a 120V DC",
+        details: "CBTC inhibe la propulsión si el freno de emergencia está aplicado o si no hay Movement Authority (MA) válida."
+      },
+      {
+        cat: "PUERTAS",
+        title: "Lazo de Supervisión de Puertas Cerradas",
+        from: "Microcontactos serie de todas las puertas del tren (RST)",
+        to: "Conector Harting X741 &rarr; Entradas vitales en tarjeta Dio5",
+        type: "Lazo cerrado a 24V DC con lectura sincronizada canal A y B",
+        details: "Si una puerta se abre con tren en movimiento o se interrumpe el lazo, ATP aplica EB por supervisión de puertas (5.5.2.2.8)."
+      },
+      {
+        cat: "ODO",
+        title: "Sensor de Velocidad Radar Doppler",
+        from: "Distribuidor OBCU_DIS (Conector Harting X731)",
+        to: "Conector de bayoneta de antena radar Doppler bajo bastidor",
+        type: "Cable apantallado: Alimentación 24V DC + señal de frecuencia",
+        details: "Comunica con placa Odo5. Si la frecuencia generada supera 41.666 Hz, el sistema lo descalifica por saturación."
+      },
+      {
+        cat: "BALISE",
+        title: "Antena Eurobalise BTM (Canal Receptor y Transmisor)",
+        from: "Conectores coaxiales en tarjetas RECA / TRMA (Rack ATP)",
+        to: "Antena BTM montada bajo bastidor del coche cabina",
+        type: "Doble cable coaxial de radiofrecuencia (Recepción + 27.095 MHz)",
+        details: "Tele-alimenta y decodifica las balizas fijas y conmutadas de vía. Aislamiento obligatorio > 1 MΩ."
+      }
+    ];
+
+    function renderCables(list) {
+      var h = '';
+      for (var i = 0; i < list.length; i++) {
+        var c = list[i];
+        h += '<div class="f-card">' +
+             '<div class="f-head"><span class="f-code">' + c.cat + '</span><span class="f-badge badge-wire">VITAL</span></div>' +
+             '<div class="f-title">' + c.title + '</div>' +
+             '<div class="route-box">' +
+               '<div class="route-node"><span style="color:#94a3b8;">ORIGEN:</span><span class="route-tag">' + c.from + '</span></div>' +
+               '<div style="text-align:center; padding:2px 0;"><span class="route-arrow">&darr; Hacia</span></div>' +
+               '<div class="route-node"><span style="color:#94a3b8;">DESTINO:</span><span class="route-tag" style="border-color:#f59e0b; color:#fbbf24;">' + c.to + '</span></div>' +
+             '</div>' +
+             '<div class="f-sec sec-info">Tipo de señal:</div><p style="font-size:12px; color:#cbd5e1; margin-top:1px;">' + c.type + '</p>' +
+             '<div class="f-sec sec-act">Punto de verificación:</div><p style="font-size:12px; color:#a7f3d0; margin-top:1px;">' + c.details + '</p>' +
+             '</div>';
+      }
+      document.getElementById('cables-list').innerHTML = h;
+    }
+
+    function filterWires() {
+      var f = document.getElementById('wire-filter').value;
+      if (f === 'ALL') {
+        renderCables(cablesDb);
+      } else {
+        var out = [];
+        for (var i = 0; i < cablesDb.length; i++) {
+          if (cablesDb[i].cat === f) out.push(cablesDb[i]);
+        }
+        renderCables(out);
+      }
+    }
+
+    var modulesDb = [
+      {
+        rack: "HMI_CAB",
+        name: "HMI (DMI) Pantalla Táctil de Cabina",
+        scn: "PIXY AG (Backlight: PID01180)",
+        func: "Interfaz de conducción CBTC: exhibe velocidad real, límite target, modo (AM/SM/RM), alarmas y apertura de puertas.",
+        led: "Display iluminado sin parpadeos. Enlace serie RS422 operativo con OBCU_ITF.",
+        diag: "5.5.2.8.1 / 5.5.2.8.2 / 5.5.2.8.3: Faulty HMI. No posee partes internas reparables. Desviaciones táctiles se calibran con pendrive USB."
+      },
+      {
+        rack: "ATP",
+        name: "VE5A (Kernel Unit / CPU Vital)",
+        scn: "S25391-B90-X23",
+        func: "Núcleo de cálculo vital 2-out-of-2 encargado de supervisar las curvas de frenado seguro (EBIC), límites de velocidad y la lógica vital de protección.",
+        led: "LEDs LA1, LA2, LB1, LB2 en VERDE continuo en operación sincrónica normal.",
+        diag: "5.5.2.3.3: VE5A module failed. LEDs en rojo indican falta de sincronismo de hardware, shutdown de CPU por watchdog o switch de Reset trabado."
+      },
+      {
+        rack: "ATP",
+        name: "Odo5 (Odometry Unit)",
+        scn: "S25391-B91-A2",
+        func: "Adquisición de pulsos del tacogenerador (OPG) y de la unidad de radar Doppler. Transmite los pulsos directamente a ATO mediante el bus Ikon.",
+        led: "Recepción de señales de doble canal sin discrepancia en la fusión de sensores.",
+        diag: "5.5.2.3.5 / 5.5.2.2.45: Odo5 module failed / EB due to odometry failure. Falso contacto en conector frontal de 48 pines o falla interna de canal que dispara freno de emergencia."
+      },
+      {
+        rack: "ATP",
+        name: "SRAUS5 (Vital Output Module)",
+        scn: "S25391-B92-A24",
+        func: "Salidas vitales mediante relés de contactos guiados para apertura y corte del lazo de freno de emergencia (EB).",
+        led: "Bobinas excitadas y lazo de emergencia cerrado en condiciones seguras.",
+        diag: "5.5.2.3.9 / 5.5.2.2.11: SRAUS5_x failed / EB readback failed. Incapacidad de leer el retorno (readback) del freno de emergencia o contactos soldados."
+      },
+      {
+        rack: "ATP",
+        name: "SV5 (Power Supply Module)",
+        scn: "V25515-B4003-A4",
+        func: "Genera tensiones aisladas y monitoreadas de 24V, 5V y 3.3V a partir de la red del tren (72V a 110V DC) con protección contra cortocircuito.",
+        led: "LEDs 24V, 5V y 3.3V en VERDE fijo continuo.",
+        diag: "SV5 Power supply failed: LEDs apagados por subtensión, sobretensión o sobrecorriente. Ocasiona la desconexión total del bastidor ATP."
+      },
+      {
+        rack: "ATO_ITF",
+        name: "CPU ITF (02F011S02)",
+        scn: "V25463-B401-X11",
+        func: "Interfaz del tren y diagnóstico. Aloja el servidor web de mantenimiento (192.168.1.32) y gestiona los enlaces de radio RCS (Airlink).",
+        led: "LED Power verde y LED Amarillo destellando al cursar telegramas de radio.",
+        diag: "5.5.2.5.2 / 5.5.2.5.7: ITF not available / ATP link failed. Pérdida del bus de enlace interno con ATP o falla del sistema operativo embebido."
+      }
+    ];
+
+    function renderModules(items) {
+      var h = '';
+      for (var i = 0; i < items.length; i++) {
+        var m = items[i];
+        h += '<div class="f-card">' +
+             '<div class="f-head"><span class="f-code">' + m.scn + '</span><span class="f-badge badge-hw">' + m.rack + '</span></div>' +
+             '<div class="f-title">' + m.name + '</div>' +
+             '<div class="f-sec sec-info">Función principal:</div><p style="font-size:12px; color:#cbd5e1; margin-top:2px;">' + m.func + '</p>' +
+             '<div class="f-sec sec-act">Indicación básica de LED:</div><p style="font-size:12px; color:#a7f3d0; margin-top:2px;">' + m.led + '</p>' +
+             '<div class="f-sec sec-cause">Escenario de falla / Diagnóstico:</div><p style="font-size:12px; color:#fca5a5; margin-top:2px;">' + m.diag + '</p>' +
+             '</div>';
+      }
+      document.getElementById('modulos-list').innerHTML = h;
+    }
+
+    function filterModulos() {
+      var f = document.getElementById('mod-filter').value;
+      if (f === 'ALL') {
+        renderModules(modulesDb);
+      } else {
+        var out = [];
+        for (var i = 0; i < modulesDb.length; i++) {
+          if (modulesDb[i].rack === f) out.push(modulesDb[i]);
+        }
+        renderModules(out);
+      }
+    }
+
+    var fusesDb = [
+      { id: "F471", plug: "X4-471", amp: "1 A", volt: "24 V", desc: "Alimentación para entradas desde cabina lejana (Far cab)" },
+      { id: "F472", plug: "X4-472", amp: "3 A", volt: "120 V", desc: "Lazo de Freno de Emergencia (EB)" },
+      { id: "F473", plug: "X4-473", amp: "3 A", volt: "120 V", desc: "Lazo de Freno de Emergencia (EB)" },
+      { id: "F474", plug: "X4-474", amp: "0.4 A", volt: "120 V", desc: "Relé de Tracción / Propulsión" },
+      { id: "F475", plug: "X4-475", amp: "0.4 A", volt: "120 V", desc: "Habilitación de apertura de puertas lado derecho (Cab 1)" },
+      { id: "F476", plug: "X4-476", amp: "0.4 A", volt: "120 V", desc: "Habilitación de apertura de puertas lado izquierdo (Cab 1)" },
+      { id: "F479", plug: "X4-479", amp: "0.4 A", volt: "120 V", desc: "Circuito interno de confirmación (Readback) de Freno de Emergencia" },
+      { id: "F480", plug: "X4-480", amp: "1 A", volt: "120 V", desc: "Fuente de alimentación auxiliar" },
+      { id: "F481", plug: "X4-481", amp: "3 A", volt: "120 V", desc: "Alimentación principal bastidor ATP" },
+      { id: "F482", plug: "X4-482", amp: "1 A", volt: "120 V", desc: "Alimentación para salidas no vitales de ATP y ATO" },
+      { id: "F483", plug: "X4-483", amp: "3.15 A", volt: "120 V", desc: "Alimentación principal bastidor ATO" }
+    ];
+
+    function renderFuses() {
+      var html = '';
+      for (var i = 0; i < fusesDb.length; i++) {
+        var f = fusesDb[i];
+        html += '<tr>' +
+          '<td><b>' + f.id + '</b><br><span style="color:#64748b; font-size:9px;">' + f.plug + '</span></td>' +
+          '<td><span class="fuse-badge">' + f.amp + '</span><span class="volt-badge">' + f.volt + '</span></td>' +
+          '<td style="color:#cbd5e1;">' + f.desc + '</td>' +
+        '</tr>';
+      }
+      document.getElementById('fuses-tbody').innerHTML = html;
+    }
+
+    var ledsDb = [
+      { mod: "VE5A", board: "VE5A (Kernel Vital ATP)", led: "LA1 / LB2", norm: "Verde", normCls: "led-green", normDesc: "Sincrónico con el canal vecino", fail: "Rojo / Destellando", failCls: "led-red", failDesc: "No sincronizado (Rojo fijo) o Parada/Shutdown de CPU (Rojo destellando)" },
+      { mod: "VE5A", board: "VE5A (Kernel Vital ATP)", led: "LA2 / LB1", norm: "Verde", normCls: "led-green", normDesc: "Libre de fallas y corte de seguridad liberado", fail: "Amarillo / Rojo", failCls: "led-yellow", failDesc: "Amarillo: corte de seguridad activo. Rojo: falla de voltaje. Rojo destellando: error de Watchdog" },
+      { mod: "SV5", board: "SV5 (Fuente de Poder ATP)", led: "24V / 5V / 3.3V", norm: "Verde", normCls: "led-green", normDesc: "Tensión de salida regulada y monitoreada OK", fail: "Apagado", failCls: "led-off", failDesc: "Falla de tensión por sobre/subtensión, sobrecorriente o fusible fundido" },
+      { mod: "RECA", board: "RECA (Receptor Eurobalise)", led: "ST (Status)", norm: "Amarillo (Lento)", normCls: "led-yellow", normDesc: "Destello lento (0.1s ON / 0.9s OFF): señal de vida OK", fail: "Amarillo (Rápido)", failCls: "led-yellow", failDesc: "Destello rápido (0.4s ON / 0.1s OFF): error de BITE" },
+      { mod: "RECA", board: "RECA (Receptor Eurobalise)", led: "A1 (Antena 1)", norm: "Amarillo", normCls: "led-yellow", normDesc: "Antena 1 conectada y transmisor activo", fail: "Apagado", failCls: "led-off", failDesc: "Desconexión de cable coaxial de antena" },
+      { mod: "LBTM5", board: "LBTM5 (Procesador Baliza)", led: "BL / BK", norm: "Verde / Verde", normCls: "led-green", normDesc: "BL: Telegrama largo recibido. BK: Telegrama corto recibido", fail: "Rojo / Naranja", failCls: "led-red", failDesc: "Rojo: Buffer FIFO lleno. Naranja: Canal bloqueado" },
+      { mod: "ATO_CPU", board: "CPU ATO / CPU ITF", led: "Power (Verde)", norm: "Verde continuo", normCls: "led-green", normDesc: "Alimentación presente", fail: "Apagado", failCls: "led-off", failDesc: "Pérdida de alimentación o fuente interna averiada" },
+      { mod: "SW", board: "LAN Switch", led: "LNK / ACT", norm: "LNK Verde fijo / ACT Amarillo titila", normCls: "led-green", normDesc: "Enlace físico establecido y tráfico activo", fail: "Apagado", failCls: "led-off", failDesc: "Cable desconectado o puerto sin link" },
+      { mod: "FAN", board: "Fan Unit (Ventilación)", led: "Power / Alarm", norm: "Verde encendido / Rojo apagado", normCls: "led-green", normDesc: "Alimentación OK y RPM nominales", fail: "Rojo encendido", failCls: "led-red", failDesc: "Ventilador detenido o caída de RPM" }
+    ];
+
+    function renderLeds(items) {
+      var html = '';
+      for (var i = 0; i < items.length; i++) {
+        var x = items[i];
+        html += '<div style="background:#0f172a; border:1px solid #334155; border-radius:6px; padding:10px; margin-bottom:8px;">' +
+          '<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">' +
+            '<span style="font-size:12px; font-weight:bold; color:#38bdf8;">' + x.board + '</span>' +
+            '<span style="font-size:10px; background:#1e293b; padding:2px 5px; border-radius:3px; font-family:monospace; color:#cbd5e1;">LED ' + x.led + '</span>' +
+          '</div>' +
+          '<div style="font-size:11px; margin-top:4px;">' +
+            '<span class="led-pill ' + x.normCls + '">NORMAL: ' + x.norm + '</span> ' +
+            '<span style="color:#cbd5e1;">' + x.normDesc + '</span>' +
+          '</div>' +
+          '<div style="font-size:11px; margin-top:4px;">' +
+            '<span class="led-pill ' + x.failCls + '">FALLA: ' + x.fail + '</span> ' +
+            '<span style="color:#fca5a5;">' + x.failDesc + '</span>' +
+          '</div>' +
+        '</div>';
+      }
+      document.getElementById('leds-container').innerHTML = html;
+    }
+
+    function filterLeds() {
+      var f = document.getElementById('led-filter').value;
+      if (f === 'ALL') {
+        renderLeds(ledsDb);
+      } else {
+        var out = [];
+        for (var i = 0; i < ledsDb.length; i++) {
+          if (ledsDb[i].mod === f) out.push(ledsDb[i]);
+        }
+        renderLeds(out);
+      }
+    }
+
+    // Inicialización general asincrónica
+    async function initApp() {
+        await initCarSelect();
+        await initBaliseCarSelect();
+        await renderWheelCards();
+        renderCards(db);
+        renderMeter(meterDb);
+        renderCables(cablesDb);
+        renderModules(modulesDb);
+        renderLeds(ledsDb);
+        renderFuses();
+        calcBaliseParts();
+        updateAuthTagUI();
+    }
+
+    initApp();
+  </script>
+</body>
+</html>
